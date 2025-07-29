@@ -136,34 +136,40 @@ function createServer() {
   });
 
   app.post('/expenses', async (req, res) => {
-    const { userId, spentAt, title, amount } = req.body;
-    const category = req.body.category || null;
-    const note = req.body.note || null;
-
-    const userIm = await User.findByPk(userId, { attributes: ['id', 'name'] });
-
-    if (
-      userId === undefined ||
-      !spentAt ||
-      !title ||
-      amount === undefined ||
-      !userIm
-    ) {
-      return res.status(400).json({ error: 'Bad Request' });
-    }
-
     try {
+      const {
+        userId,
+        spentAt,
+        title,
+        amount,
+        category = null,
+        note = null,
+      } = req.body;
+
+      if (!userId || !spentAt || !title || amount === undefined) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const userIm = await User.findByPk(userId, {
+        attributes: ['id', 'name'],
+      });
+
+      if (!userIm) {
+        return res.status(400).json({ error: 'User not found' });
+      }
+
       const newExpense = await Expense.create({
-        userId: userId,
-        spentAt: spentAt,
-        title: title,
-        amount: amount,
-        category: category,
-        note: note,
+        userId,
+        spentAt,
+        title,
+        amount,
+        category,
+        note,
       });
 
       res.status(201).json(newExpense);
     } catch (err) {
+      console.error('Error creating expense:', err);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
